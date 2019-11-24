@@ -1,0 +1,12 @@
+[Unit]
+Description=MIDI Program Up on NS2Ex Pedal Press
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pi/raspi-pedal-patchup/main.py > /home/pi/raspi-pedal-patchup.log 2>&1
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
