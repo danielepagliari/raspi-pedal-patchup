@@ -1,5 +1,7 @@
+import os
 import sys
 import time
+import RPi.GPIO as GPIO
 from rtmidi import API_MACOSX_CORE, API_UNIX_JACK, API_LINUX_ALSA, MidiIn, MidiOut
 from rtmidi.midiutil import open_midiinput, open_midioutput
 from rtmidi.midiconstants import (BANK_SELECT_LSB, BANK_SELECT_MSB, CHANNEL_PRESSURE,
@@ -10,6 +12,7 @@ PEDAL_PRESS_CC = 114
 PROGRAMS_PER_BANK = 100
 N_BANKS = 4
 KEYBOARD_STRING = "Nord"
+LED_GPIO_PIN = 16
 
 class MidiInputHandler(object):
     def __init__(self, port, midiout, channel = 0):
@@ -30,7 +33,7 @@ class MidiInputHandler(object):
             self.set_prog_number(message)
         if self.is_bank_lsb_change(message):
             self.set_bank_lsb(message)
-        if self.is_pedal_press(message):
+        if self.is_pedal_release(message):
             self.increment_program()
             self.send_prog_number()
 
@@ -44,10 +47,11 @@ class MidiInputHandler(object):
                 and message[0] & 0x0F == self._channel
                 and message[1] == BANK_SELECT_LSB)
 
-    def is_pedal_press(self, message):
+    def is_pedal_release(self, message):
         return (message[0] & 0xF0 == CONTROLLER_CHANGE
                 and message[0] & 0x0F == self._channel
-                and message[1] == PEDAL_PRESS_CC)
+                and message[1] == PEDAL_PRESS_CC
+                and message[2] == 0x00)
 
     def set_prog_number(self, message):
         self._prog_number = message[1]
@@ -68,6 +72,20 @@ class MidiInputHandler(object):
         msg = [PROGRAM_CHANGE + self._channel, self._prog_number]
         midiout.send_message(msg)
 
+################################################################################
+# Main Progam Start
+################################################################################
+
+os.system('echo gpio | tee /sys/class/leds/led0/trigger')
+
+GPIO.setwarnings(False)
+
+# Needs to be BCM. GPIO.BOARD lets you address GPIO ports by periperal
+# connector pin number, and the LED GPIO isn't on the connector
+GPIO.setmode(GPIO.BCM)
+
+# set up GPIO output channel
+GPIO.setup(LED_GPIO_PIN, GPIO.OUT)
 
 try:
     inport = None
@@ -120,6 +138,9 @@ try:
     # Just wait for keyboard interrupt,
     # everything else is handled via the input callback.
     while True:
+        GPIO.output(LED_GPIO_PIN, GPIO.LOW)
+        time.sleep(1)
+        GPIO.output(LED_GPIO_PIN, GPIO.HIGH)
         time.sleep(1)
 except KeyboardInterrupt:
     print('')
