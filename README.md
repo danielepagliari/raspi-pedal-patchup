@@ -1,3 +1,7 @@
+# Raspberry Pi Pedal Patch-Up
+
+A Python script for Raspberry Pi that converts MIDI signals allowing to use the latch/rotor pedal in the Nord Stage 2ex keyboard to do Program Up on press (a functionality not supported by the keyboard OS). Easily customizable for other keyboards as well.
+
 
 ## Install Instructions:
 
